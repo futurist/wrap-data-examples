@@ -7,18 +7,18 @@ import model from './model'
 class App extends React.Component {
   constructor (props) {
     super(props)
-    this.state = {}
-    model.change.map(({ value, path }) => {
-      if (path.join() === 'context,theme') {
-        this.setState({
-          theme: value.unwrap()
-        })
+    model.change.map(({ value, type, path }) => {
+      const _path = path.join()
+      if (_path === 'context,theme' || _path === 'temperatures') {
+        this.forceUpdate()
       }
     })
   }
   render () {
-    const { theme = '' } = this.state
+    const { theme = '' } = model.unwrap('context')
+    console.log(this.state, model.unwrap('temperatures'))
     return <div className={'main ' + theme}>
+      <button onClick={model.fetchTemperatures}>Fetch Temperatures</button>
       <button onClick={model.changeTheme}>Change Theme</button>
       <Measure title='Air' model={model.slice('temperatures.air')} />
       <Measure title='Water' model={model.slice('temperatures.water')} />

@@ -9,31 +9,40 @@ class Measure extends React.Component {
     super(props)
     const { model } = props
     this.state = model.unwrap()
-    model.change.map(({ value, type, path }) => {
+    this.init()
+  }
+
+  init () {
+    this.props.model.change.map(({ value, type, path }) => {
       console.log(value(), type, path)
       this.setState({
         [path]: value.unwrap()
       })
     })
     this.add = () => {
-      model.getset('value', v => v.unwrap() + 1)
+      this.props.model.getset('value', v => v.unwrap() + 1)
     }
     this.minus = () => {
-      model.getset('value', v => v.unwrap() - 1)
+      this.props.model.getset('value', v => v.unwrap() - 1)
     }
     this.changeUnit = () => {
-      model.getset('units', v => {
+      this.props.model.getset('units', v => {
         const isF = v() === 'F'
         const units = isF ? 'C' : 'F'
-        model.getset('value', value => convert(value.unwrap(), units))
+        this.props.model.getset('value', value => convert(value.unwrap(), units))
         return units
       })
     }
   }
+
+  static getDerivedStateFromProps (nextProps, prevState) {
+    return nextProps.model.unwrap()
+  }
+
   render () {
     const { value, units } = this.state
     return <div>
-      <div>{this.props.title} temperatures: {value}&deg;{units}</div>
+      <div>{this.props.title} {this.props.count} temperatures: {value}&deg;{units}</div>
       <button onClick={this.add}>+</button>
       <button onClick={this.minus}>-</button>
       <button onClick={this.changeUnit}>Change Unit</button>

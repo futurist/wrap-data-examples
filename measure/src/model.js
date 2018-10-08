@@ -21,4 +21,16 @@ model.changeTheme = () => {
   model.getset('context.theme', v => v() === 'dark' ? '' : 'dark')
 }
 
+model.fetchTemperatures = () => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve(model.set('temperatures', {
+        air: { value: 22, units: 'C' },
+        water: { value: 76, units: 'F' }
+      }))
+    }, 1000)
+  })
+}
+
+window.model = model
 export default model
