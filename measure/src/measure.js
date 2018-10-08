@@ -42,7 +42,7 @@ class Measure extends React.Component {
   render () {
     const { value, units } = this.state
     return <div>
-      <div>{this.props.title} {this.props.count} temperatures: {value}&deg;{units}</div>
+      <div>{this.props.title} temperatures: {value}&deg;{units}</div>
       <button onClick={this.add}>+</button>
       <button onClick={this.minus}>-</button>
       <button onClick={this.changeUnit}>Change Unit</button>
