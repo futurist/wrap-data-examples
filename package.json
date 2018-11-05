@@ -17,6 +17,6 @@
   },
   "homepage": "https://github.com/futurist/wrap-data-examples#readme",
   "devDependencies": {
-
+    "lerna": "^3.4.3"
   }
 }
