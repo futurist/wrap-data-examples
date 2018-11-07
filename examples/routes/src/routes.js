@@ -14,6 +14,7 @@ export default [{
       childRoutes: [{
         path: 'bus',
         component: Bus,
+        modelName: 'bus',
       }]
     },
     {
