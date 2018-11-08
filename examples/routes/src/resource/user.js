@@ -1,10 +1,10 @@
 module.exports = {
   getUser: {
-    url: 'http://www.taobao.com',
+    url: '/xxx',
     method: 'get'
   },
   postUser: {
-    url: 'http://www.taobao.com',
+    url: '/sdf',
     method: 'post'
   }
 }
