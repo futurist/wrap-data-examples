@@ -65,6 +65,14 @@ export function makeModel(data, config) {
   )(data);
 }
 
+export function defaultErrorHandler(err) {
+  if (err.name === 'AbortError') {
+    console.log('request aborted');
+  }
+  console.log(err);
+  throw err;
+}
+
 export function unwrapAPI(packer) {
   if (!packer) return;
   // console.log(obj.path)
@@ -86,9 +94,10 @@ export function unwrapAPI(packer) {
               reducer,
               callback,
               timeout,
-              checkStatus,
-              beforeResponse,
-              afterResponse
+              checkStatus = defaultCheckStatus,
+              beforeResponse = defaultBeforeResponse,
+              afterResponse = defaultAfterResponse,
+              errorHandler = defaultErrorHandler
             } = actions[service] || {};
             if (typeof exec == 'string') exec = model.unwrap(['api', name, exec], {
               map: v => v
@@ -104,15 +113,25 @@ export function unwrapAPI(packer) {
               url = url + '?' + qs.stringify(query);
             }
             const controller = new AbortController();
-            timeout = Number(timeout);
+            timeout = Number(exec.timeout || timeout);
             let isTimeout = false;
             let timeoutId = -1;
-            if (timeout > 0) {
-              timeoutId = setTimeout(() => {
-                isTimeout = true;
-                controller.abort();
-              }, timeout);
-            }
+            let timeoutPromise = new Promise((resolve, reject) => {
+              if (timeout > 0) {
+                timeoutId = setTimeout(() => {
+                  isTimeout = true;
+                  if (mock) {
+                    const abortError = new Error('Aborted due to timeout');
+                    abortError.name = 'AbortError';
+                    reject(abortError);
+                  } else {
+                    controller.abort();
+                  }
+                }, timeout);
+              } else {
+                resolve();
+              }
+            });
             let init = {
               method,
               signal: controller.signal,
@@ -123,25 +142,30 @@ export function unwrapAPI(packer) {
               ...args
             };
             let promise = mock ?
-              Promise.resolve(mock instanceof Response || mock instanceof Promise ?
-                mock :
-                new Response(
-                  isPOJO(mock) || Array.isArray(mock) ?
-                    JSON.stringify(mock) :
-                    mock
-                )
+              Promise.resolve(
+                typeof mock === 'function' ?
+                  mock() :
+                  mock instanceof Response ?
+                    mock :
+                    new Response(
+                      isPOJO(mock) || Array.isArray(mock) ?
+                        JSON.stringify(mock) :
+                        mock
+                    )
               ) :
               abortableFetch(url, init);
             // console.error(url, init);
-            return promise
-              .then(r=>{
-                clearTimeout(timeoutId)
-                return r;
+            return Promise.race([
+              timeoutPromise,
+              promise
+            ])
+              .then(() => {
+                clearTimeout(timeoutId);
+                return promise;
               })
-              .then(checkStatus || defaultCheckStatus)
-              .then(beforeResponse || defaultBeforeResponse)
+              .then(checkStatus)
+              .then(beforeResponse)
               .then(res => {
-                afterResponse = afterResponse || defaultAfterResponse;
                 res = afterResponse(res);
                 // console.log('res', res);
                 const success = callback && callback.success || reducer && reducer.success || callback || reducer;
@@ -154,12 +178,9 @@ export function unwrapAPI(packer) {
                 return res;
               })
               .catch(err => {
-                clearTimeout(timeoutId)
-                if (err.name === 'AbortError') {
-                  console.log('request aborted', isTimeout);
-                }
-                console.log(err);
-                throw err;
+                err.isTimeout = isTimeout;
+                clearTimeout(timeoutId);
+                errorHandler(err);
               });
           });
       }

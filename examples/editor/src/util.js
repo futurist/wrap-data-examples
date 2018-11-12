@@ -104,7 +104,7 @@ export function unwrapAPI(packer) {
               url = url + '?' + qs.stringify(query);
             }
             const controller = new AbortController();
-            timeout = Number(timeout);
+            timeout = Number(exec.timeout || timeout);
             let isTimeout = false;
             let timeoutId = -1;
             if (timeout > 0) {
