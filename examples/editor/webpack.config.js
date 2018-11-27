@@ -15,7 +15,8 @@ module.exports = {
     rules: [
       {
         test: /\.jsx?$/,
-        use: 'babel-loader'
+        use: 'babel-loader',
+        exclude: /node_modules/
       },
       {
         test: /\.css$/,
@@ -25,7 +26,7 @@ module.exports = {
   },
   plugins: [
     new MonacoWebpackPlugin({
-      
+      languages: ['mysql']
     }),
     isProduction && new BundleAnalyzerPlugin()
   ].filter(Boolean)

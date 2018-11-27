@@ -6,6 +6,8 @@ const _ = require('lodash');
 import MonacoEditor from 'react-monaco-editor';
 import DragTargetWrapper from './drag-target-wrapper';
 
+import {CompletionProvider} from './lsp/providers'
+
 class MonacoEditorWarpper extends Component {
   constructor(props) {
     super(props);
@@ -59,6 +61,19 @@ class MonacoEditorWarpper extends Component {
 
   onChange(newValue) {
     this.props.editCode(newValue);
+  }
+
+  editorDidMount(editor, monaco) {
+
+  }
+  editorWillMount(monaco) {
+    const completionProvider = new CompletionProvider()
+    monaco.languages.registerCompletionItemProvider('mysql',  {
+      provideCompletionItems: (...args) => {
+        // console.log(args)
+        return completionProvider.provideCompletionItems(...args)
+      }
+    })
   }
 
   render() {
