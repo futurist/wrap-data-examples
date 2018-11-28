@@ -1,21 +1,22 @@
-'use strict';
-import React, {Component} from 'react';
-import {Select, Radio} from 'antd';
-const Option = Select.Option;
-const _ = require('lodash');
-import MonacoEditor from 'react-monaco-editor';
-import DragTargetWrapper from './drag-target-wrapper';
+'use strict'
+import React, { Component } from 'react'
+import { Select, Radio } from 'antd'
+const Option = Select.Option
+const _ = require('lodash')
+import MonacoEditor from 'react-monaco-editor'
+import DragTargetWrapper from './drag-target-wrapper'
 
-import {CompletionProvider} from './lsp/providers'
+import { CompletionProvider } from './lsp/providers'
 
 class MonacoEditorWarpper extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {};
-    this.instance = null;
+  constructor (props) {
+    super(props)
+    this.state = {}
+    this.instance = null
+    window.com = this
   }
 
-  editorWillMount(monaco) {
+  editorWillMount (monaco) {
     monaco.editor.defineTheme('myTheme', {
       base: 'vs',
       inherit: true,
@@ -30,104 +31,140 @@ class MonacoEditorWarpper extends Component {
         'editor.selectionBackground': '#88000030',
         'editor.inactiveSelectionBackground': '#88000015'
       }
-    });
-  }
-
-  onDragAddTag(dragSource, dragType) {
-    let setText = (value) => {
-      let position = this.instance.getPosition();
-      if (!_.isEmpty(position)) {
-        this.instance.executeEdits(this.props.code, [{
-          range: {startLineNumber: position.lineNumber, startColumn: position.column, endLineNumber: position.lineNumber, endColumn: position.column},
-          text: value
-        }]);
-      } else {
-        let code = _.cloneDeep(this.props.code);
-        code = code + value;
-        this.props.editCode(code);
-      }
-    };
-    if (dragType === 'entity') {
-      let entityText = dragSource.meta.entityCode;
-      setText(entityText);
-    } else if (dragType === 'func') {
-      let funcText = dragSource.meta.name + '(' + ')';
-      setText(funcText);
-    } else if (dragType === 'tag') {
-      let tagText =  dragSource.meta.entityCode + '.' + dragSource.meta.tagCode;
-      setText(tagText);
-    }
-  }
-
-  onChange(newValue) {
-    this.props.editCode(newValue);
-  }
-
-  editorDidMount(editor, monaco) {
-
-  }
-  editorWillMount(monaco) {
-    const completionProvider = new CompletionProvider()
-    monaco.languages.registerCompletionItemProvider('mysql',  {
-      provideCompletionItems: (...args) => {
-        // console.log(args)
-        return completionProvider.provideCompletionItems(...args)
-      }
     })
   }
 
-  render() {
+  onDragAddTag (dragSource, dragType) {
+    let setText = value => {
+      let position = this.instance.getPosition()
+      if (!_.isEmpty(position)) {
+        this.instance.executeEdits(this.props.code, [
+          {
+            range: {
+              startLineNumber: position.lineNumber,
+              startColumn: position.column,
+              endLineNumber: position.lineNumber,
+              endColumn: position.column
+            },
+            text: value
+          }
+        ])
+      } else {
+        let code = _.cloneDeep(this.props.code)
+        code = code + value
+        this.props.editCode(code)
+      }
+    }
+    if (dragType === 'entity') {
+      let entityText = dragSource.meta.entityCode
+      setText(entityText)
+    } else if (dragType === 'func') {
+      let funcText = dragSource.meta.name + '(' + ')'
+      setText(funcText)
+    } else if (dragType === 'tag') {
+      let tagText = dragSource.meta.entityCode + '.' + dragSource.meta.tagCode
+      setText(tagText)
+    }
+  }
+
+  onChange (newValue) {
+    this.props.editCode(newValue)
+    const pos = this.instance.getPosition()
+    const word = this.instance.model.getWordAtPosition(pos)
+    let marks = []
+    if (word) {
+      marks = [
+        {
+          severity: 8,
+          startLineNumber: pos.lineNumber,
+          startColumn: word.startColumn,
+          endLineNumber: pos.lineNumber,
+          endColumn: word.endColumn,
+          message: 'Error\nError message here'
+        }
+      ]
+    }
+    monaco.editor.setModelMarkers(com.instance.model, com.instance.model.id, marks)
+  }
+
+  editorDidMount (editor, monaco) {
+    console.log('editor', editor)
+  }
+  editorWillMount (monaco) {
+    window.monaco = monaco
+    monaco.languages.registerCompletionItemProvider(
+      'mysql',
+      new CompletionProvider()
+    )
+  }
+
+  render () {
     const options = {
       selectOnLineNumbers: true,
       automaticLayout: true,
       dragAndDrop: true,
       readOnly: this.props.isReadOnly
-    };
+    }
     return (
-      <div className="tag-factory-codemirror">
-        <div className="content-ctx">
-          <div className="codemirror-form">
-            <div className="search-tag">
-              <label className="search-machine">查询编辑器</label>
+      <div className='tag-factory-codemirror'>
+        <div className='content-ctx'>
+          <div className='codemirror-form'>
+            <div className='search-tag'>
+              <label className='search-machine'>查询编辑器</label>
             </div>
-            <div className="form-ctx">
-              <label className="search-type">查询类型</label>
+            <div className='form-ctx'>
+              <label className='search-type'>查询类型</label>
               <Radio.Group
                 value={this.props.searchType}
                 onChange={this.props.changeType}
               >
-                <Radio value="2">TQL</Radio>
-                <Radio value="1">JSON</Radio>
+                <Radio value='2'>TQL</Radio>
+                <Radio value='1'>JSON</Radio>
               </Radio.Group>
-              <label className="search-type">选择样例</label>
-              <Select placeholder="简单查询" className="choose-select" onSelect={(value) => {this.props.editCode(value);}}>
-                <Option value='select User.age from User where User.gender = ${gender, string, "good"}'>s01</Option>
-                <Option value='select User.age, Order.time from User join Order where time > ${start_time,string,"20080808"} and time < ${end_time,string,"20080908"}'>s02</Option>
-                <Option value='select User.age, Film.type from User left join Film on (User.likeFilm = Film.id) where user.age > ${start_age,number,20} and user.age < ${end_age,number,100}'>s03</Option>
+              <label className='search-type'>选择样例</label>
+              <Select
+                placeholder='简单查询'
+                className='choose-select'
+                onSelect={value => {
+                  this.props.editCode(value)
+                }}
+              >
+                <Option value='select User.age from User where User.gender = ${gender, string, &quot;good&quot;}'>
+                  s01
+                </Option>
+                <Option value='select User.age, Order.time from User join Order where time > ${start_time,string,&quot;20080808&quot;} and time < ${end_time,string,&quot;20080908&quot;}'>
+                  s02
+                </Option>
+                <Option value='select User.age, Film.type from User left join Film on (User.likeFilm = Film.id) where user.age > ${start_age,number,20} and user.age < ${end_age,number,100}'>
+                  s03
+                </Option>
               </Select>
             </div>
           </div>
-          <div className="factory-codemirror">
+          <div className='factory-codemirror'>
             {/* <DragTargetWrapper
               className='codemirror-drag-wrapper'
               dropCb={this.onDragAddTag.bind(this)}
             > */}
-              <MonacoEditor
-                width="100%"
-                height="100%"
-                language='mysql'
-                theme="myTheme"
-                value={this.props.code}
-                options={options}
-                onChange={this.onChange.bind(this)}
-                editorDidMount={(editor) => { this.instance = editor; editor.focus();}}
-                editorWillMount={this.editorWillMount}
-              />
+            <MonacoEditor
+              width='100%'
+              height='100%'
+              language='mysql'
+              theme='myTheme'
+              value={this.props.code}
+              options={options}
+              onChange={this.onChange.bind(this)}
+              editorDidMount={editor => {
+                this.instance = editor
+                editor.focus()
+              }}
+              editorWillMount={this.editorWillMount}
+            />
             {/* </DragTargetWrapper> */}
           </div>
         </div>
       </div>
-    );
+    )
   }
 }
-export default MonacoEditorWarpper;
+export default MonacoEditorWarpper
